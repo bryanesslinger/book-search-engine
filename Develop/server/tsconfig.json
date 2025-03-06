@@ -1,0 +1,32 @@
+// {
+//   "extends": "../tsconfig.json",
+//   "compilerOptions": {
+//     /* Modules */
+//     "rootDir": "src" /* Specify the root folder within your source files. */,
+
+//     /* Emit */
+//     "outDir": "dist" /* Specify an output folder for all emitted files. */
+//     // "noEmitOnError": true /* Disable emitting files if any type checking errors are reported. */
+//   },
+//   "include": ["src"],
+//   "typeRoots": ["./node_modules/@types", "./src/types"]
+// }
+
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    /* Modules */
+    "module": "NodeNext",  // Required for ES Modules
+    "moduleResolution": "NodeNext", // Properly resolve .js imports
+    "target": "ES2022",
+    "allowJs": true,
+    "rootDir": "src",  // Root folder of source files
+
+    /* Emit */
+    "outDir": "dist",  // Output folder for compiled files
+    "esModuleInterop": true, // Ensures compatibility with CommonJS modules
+    "resolveJsonModule": true
+  },
+  "include": ["src"],
+  "typeRoots": ["./node_modules/@types", "./src/types"]
+}
