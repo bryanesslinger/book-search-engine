@@ -83,6 +83,7 @@
 
 
 // new
+import cors from 'cors';
 import dotenv from 'dotenv';
 dotenv.config();
 import express from 'express';
@@ -101,36 +102,42 @@ const server = new ApolloServer({
 
 const app = express();
 
+app.use(
+  cors({
+    origin: '*',
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    methods: ['GET', 'POST', 'OPTIONS'],
+  })
+);
+
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+
 const startApolloServer = async () => {
   await server.start();
   await db;
 
-  app.use(express.urlencoded({ extended: false }));
-  app.use(express.json());
-
   app.use(
     '/graphql',
     expressMiddleware(server, {
-      context: async (contextValue) => {
-        const { req } = contextValue;
+      context: async ({ req }) => {
         const authContext = authenticateToken({ req });
-  
         console.log("🛠️ GraphQL Context:", authContext);
-  
         return authContext;
       },
     })
   );
-  
-  
 
   if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(__dirname, '../client/dist')));
-
     app.get('*', (_req, res) => {
       res.sendFile(path.join(__dirname, '../client/dist/index.html'));
     });
   }
+
 
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
