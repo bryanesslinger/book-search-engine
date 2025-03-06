@@ -1,7 +1,6 @@
 import User from '../models/User.js';
 import { UserDocument } from '../models/User.js'; 
-import { signToken, AuthenticationError  } from '../services/auth.js';
-
+import { signToken, AuthenticationError } from '../services/auth.js';
 
 interface UserArgs {
   userId: string;
@@ -15,73 +14,99 @@ interface CreateUserArgs {
   };
 }
 
+interface SaveBookArgs {
+  input: {
+    bookId: string;
+    title: string;
+    authors: string[];
+    description: string;
+    image?: string;
+    link?: string;
+  };
+}
+
+interface RemoveBookArgs {
+  bookId: string;
+}
+
 interface Context {
   user?: UserDocument; 
 }
 
 const resolvers = {
   Query: {
-    // Get all users (or just one based on your needs)
     getUsers: async (): Promise<UserDocument[]> => {
-      return await User.find();  // Fetch all users
+      return await User.find();
     },
 
-    // Fetch a user by ID or username
     getUser: async (_parent: unknown, { userId }: UserArgs): Promise<UserDocument | null> => {
-      return await User.findOne({ _id: userId });  // Find by userId
+      return await User.findOne({ _id: userId });
     },
 
-    // Retrieve the current logged-in user (based on context)
     me: async (_parent: unknown, _args: unknown, context: Context): Promise<UserDocument | null> => {
       if (context.user) {
-        return await User.findOne({ _id: context.user._id });  // Find user by _id in context
+        return await User.findOne({ _id: context.user._id });
       }
       throw new AuthenticationError('Not Authenticated');
     },
   },
 
   Mutation: {
-    // Create a new user and sign a JWT token
     createUser: async (_parent: unknown, { input }: CreateUserArgs): Promise<{ token: string; user: UserDocument }> => {
-      const user = await User.create(input);  // Create new user
-      const token = signToken(user.username, user.email, user.id);  // Sign token for the new user
-
+      const user = await User.create(input);
+      const token = signToken(user.username, user.email, user.id);
       return { token, user };
     },
 
-    // Login and get the user details along with a JWT token
     login: async (_parent: unknown, { username, password }: { username: string; password: string }): Promise<{ token: string; user: UserDocument }> => {
-      const user = await User.findOne({ username });  // Find user by username
-
+      const user = await User.findOne({ username });
       if (!user) {
         throw new AuthenticationError('Could not find user');
       }
-
-      const correctPw = await user.isCorrectPassword(password);  // Check if password is correct
-
+      const correctPw = await user.isCorrectPassword(password);
       if (!correctPw) {
         throw new AuthenticationError('Not Authenticated');
       }
-
-      const token = signToken(user.username, user.email, user.id);  // Sign token for the authenticated user
-
+      const token = signToken(user.username, user.email, user.id);
       return { token, user };
     },
 
-    // Example mutation for updating user details
-    updateUser: async (_parent: unknown, { userId, input }: { userId: string, input: Partial<UserDocument> }, context: Context): Promise<UserDocument | null> => {
+    updateUser: async (_parent: unknown, { userId, input }: { userId: string; input: Partial<UserDocument> }, context: Context): Promise<UserDocument | null> => {
       if (context.user && context.user._id === userId) {
-        return await User.findOneAndUpdate({ _id: userId }, input, { new: true });  // Update the user
+        return await User.findOneAndUpdate({ _id: userId }, input, { new: true });
       }
       throw new AuthenticationError('You cannot update this user');
     },
 
-    // Example mutation for deleting a user
     deleteUser: async (_parent: unknown, { userId }: UserArgs, context: Context): Promise<UserDocument | null> => {
       if (context.user && context.user._id === userId) {
-        return await User.findOneAndDelete({ _id: userId });  // Delete the user
+        return await User.findOneAndDelete({ _id: userId });
       }
       throw new AuthenticationError('You cannot delete this user');
+    },
+
+    saveBook: async (_parent: unknown, { input }: SaveBookArgs, context: Context): Promise<UserDocument | null> => {
+      if (!context.user) {
+        throw new AuthenticationError('Not Authenticated');
+      }
+
+      return await User.findOneAndUpdate(
+        { _id: context.user._id },
+        { $addToSet: { savedBooks: input } },
+        { new: true, runValidators: true }
+      );
+    },
+
+    removeBook: async (_parent: unknown, { bookId }: RemoveBookArgs, context: Context): Promise<UserDocument | null> => {
+      if (!context.user) {
+        throw new AuthenticationError('Not Authenticated');
+      }
+
+      return await User.findOneAndUpdate(
+        { _id: context.user._id },
+        { $pull: { savedBooks: { bookId } } },
+        { new: true }
+      );
     },
   },
 };

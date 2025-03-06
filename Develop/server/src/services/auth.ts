@@ -62,29 +62,41 @@ interface JwtPayload {
 }
 
 export const authenticateToken = ({ req }: { req: Request }) => {
-  let token = req.body.token || req.query.token || req.headers.authorization;
+  let token = req.headers.authorization || req.body.token || req.query.token;
 
-  if (req.headers.authorization) {
-    token = token.split(' ').pop()?.trim();
+  // Ensure the Authorization header is formatted correctly
+  if (token && token.startsWith('Bearer ')) {
+    token = token.split(' ')[1]; // Extract token after "Bearer "
   }
 
   if (!token) {
-    return { user: null }; // Return null if no token is found
+    console.log("⚠️ No token found in request headers.");
+    return { user: null };
+  }
+
+  const secretKey = process.env.JWT_SECRET_KEY;
+  if (!secretKey) {
+    console.error("❌ JWT_SECRET_KEY is missing from environment variables!");
+    throw new Error("Server misconfiguration: JWT_SECRET_KEY is required.");
   }
 
   try {
-    const { data }: any = jwt.verify(token, process.env.JWT_SECRET_KEY || '', { maxAge: '2h' });
-    return { user: data as JwtPayload }; // Return extracted user
+    const { data } = jwt.verify(token, secretKey) as { data: JwtPayload };
+    console.log("✅ Token successfully verified:", data);
+    return { user: data }; // Return extracted user
   } catch (err) {
-    console.log('Invalid token');
-    return { user: null }; // Return null if token is invalid
+    console.log("❌ Invalid token:", err);
+    return { user: null };
   }
 };
 
 export const signToken = (username: string, email: string, _id: string) => {
-  const payload = { username, email, _id };
-  const secretKey: string = process.env.JWT_SECRET_KEY || '';
+  const secretKey = process.env.JWT_SECRET_KEY;
+  if (!secretKey) {
+    throw new Error("Server misconfiguration: JWT_SECRET_KEY is required.");
+  }
 
+  const payload = { username, email, _id };
   return jwt.sign({ data: payload }, secretKey, { expiresIn: '2h' });
 };
 

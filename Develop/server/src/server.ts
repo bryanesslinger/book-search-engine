@@ -83,14 +83,14 @@
 
 
 // new
-
+import dotenv from 'dotenv';
+dotenv.config();
 import express from 'express';
 import path from 'node:path';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@apollo/server/express4';
 import { authenticateToken } from './services/auth.js';
-import { typeDefs } from './schemas/typeDefs.js';
-import resolvers from './schemas/resolvers.js';
+import { typeDefs, resolvers } from './schemas/index.js';
 import db from './config/connection.js';
 
 const PORT = process.env.PORT || 3001;
@@ -112,11 +112,16 @@ const startApolloServer = async () => {
     '/graphql',
     expressMiddleware(server, {
       context: async (contextValue) => {
-        const { req } = contextValue; 
-        return authenticateToken({ req });
+        const { req } = contextValue;
+        const authContext = authenticateToken({ req });
+  
+        console.log("🛠️ GraphQL Context:", authContext);
+  
+        return authContext;
       },
     })
   );
+  
   
 
   if (process.env.NODE_ENV === 'production') {
