@@ -19,55 +19,73 @@ const __dirname = path.dirname(__filename);
 const PORT = process.env.PORT || 3001;
 const app = express();
 
+console.log('Environment:', process.env.NODE_ENV);
+
 const server = new ApolloServer({
   typeDefs,
   resolvers,
   introspection: true,
+  includeStacktraceInErrorResponses: true,
 });
 
 const startApolloServer = async () => {
-  await server.start();
+  try {
+    await server.start();
+    console.log('Apollo Server started successfully');
 
-  app.use(express.urlencoded({ extended: true }));
-  app.use(express.json());
+    app.use(express.urlencoded({ extended: true }));
+    app.use(express.json());
 
-  // Add CORS middleware for development
-  if (process.env.NODE_ENV !== 'production') {
-    app.use(cors({
-      origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
-      credentials: true
-    }));
-  }
+    // Add CORS middleware for development
+    if (process.env.NODE_ENV !== 'production') {
+      app.use(cors({
+        origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+        credentials: true
+      }));
+    }
 
-  // GraphQL endpoint
-  app.use(
-    '/graphql',
-    cors(), // Enable CORS for all origins in production for GraphQL
-    expressMiddleware(server, {
-      context: async () => ({})
-    })
-  );
+    // GraphQL endpoint
+    app.use(
+      '/graphql',
+      cors({
+        origin: '*',
+        credentials: true
+      }),
+      expressMiddleware(server, {
+        context: async () => ({}),
+      })
+    );
 
-  // Serve static assets in production
-  if (process.env.NODE_ENV === 'production') {
-    // Set static folder
-    const clientDistPath = path.join(__dirname, '../../../Develop/client/dist');
-    app.use(express.static(clientDistPath));
+    // Serve static assets in production
+    if (process.env.NODE_ENV === 'production') {
+      console.log('Setting up static file serving for production');
+      const clientDistPath = path.join(__dirname, '../../../Develop/client/dist');
+      console.log('Client dist path:', clientDistPath);
+      app.use(express.static(clientDistPath));
 
-    app.get('*', (_req, res) => {
-      res.sendFile(path.join(clientDistPath, 'index.html'));
+      app.get('*', (_req, res) => {
+        res.sendFile(path.join(clientDistPath, 'index.html'));
+      });
+    }
+
+    db.on('error', (error) => {
+      console.error('MongoDB connection error:', error);
     });
+
+    db.once('open', () => {
+      console.log('MongoDB connection established successfully');
+      
+      app.listen(PORT, () => {
+        console.log(`🚀 API server running on port ${PORT}!`);
+        console.log(`🔗 GraphQL available at http://localhost:${PORT}/graphql`);
+      });
+    });
+
+  } catch (error) {
+    console.error('Error starting server:', error);
   }
-
-  db.on('error', console.error.bind(console, 'MongoDB connection error:'));
-  await db.once('open', () => {
-    console.log('MongoDB connection established successfully');
-  });
-
-  app.listen(PORT, () => {
-    console.log(`🚀 API server running on port ${PORT}!`);
-    console.log(`🔗 GraphQL available at http://localhost:${PORT}/graphql`);
-  });
 };
 
-startApolloServer();
+startApolloServer().catch(error => {
+  console.error('Unhandled server startup error:', error);
+});
