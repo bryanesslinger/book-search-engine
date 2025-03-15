@@ -1,6 +1,7 @@
 // new
 import express from 'express';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@apollo/server/express4';
 import dotenv from 'dotenv';
@@ -11,6 +12,9 @@ import db from './config/connection.js';
 // import { authenticateToken } from './services/auth.js'; // removing auth for hw submission
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 3001;
 const app = express();
@@ -49,10 +53,11 @@ const startApolloServer = async () => {
   // Serve static assets in production
   if (process.env.NODE_ENV === 'production') {
     // Set static folder
-    app.use(express.static(path.join(__dirname, '../../client/dist')));
+    const clientDistPath = path.join(__dirname, '../../../Develop/client/dist');
+    app.use(express.static(clientDistPath));
 
     app.get('*', (_req, res) => {
-      res.sendFile(path.join(__dirname, '../../client/dist/index.html'));
+      res.sendFile(path.join(clientDistPath, 'index.html'));
     });
   }
 
