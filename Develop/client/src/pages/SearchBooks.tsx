@@ -16,7 +16,7 @@ const SearchBooks = () => {
   // State for search input
   const [searchInput, setSearchInput] = useState('');
   // State for saved book IDs
-  const [savedBookIds, setSavedBookIds] = useState(getSavedBookIds());
+  const [savedBookIds, setSavedBookIds] = useState<string[]>(getSavedBookIds());
 
   // Apollo Mutation Hook for Saving Books
   const [saveBook] = useMutation(SAVE_BOOK);
@@ -58,9 +58,9 @@ const SearchBooks = () => {
     }
   };
 
-  // Save Book Handler (Replaced REST API with GraphQL)
+  // Save Book Handler
   const handleSaveBook = async (bookId: string) => {
-    const bookToSave: Book | undefined = searchedBooks.find((book) => book.bookId === bookId);
+    const bookToSave = searchedBooks.find((book) => book.bookId === bookId);
   
     if (!bookToSave) return;
   
@@ -74,10 +74,7 @@ const SearchBooks = () => {
         variables: { input: bookToSave },
       });
   
-      setSavedBookIds((prev: Set<string>) => new Set([...prev, bookToSave.bookId]));
-      
-      // Ensure TypeScript recognizes savedBookIds as an array of strings
-      saveBookIds([...Array.from(savedBookIds as Set<string>), bookToSave.bookId]);
+      setSavedBookIds([...savedBookIds, bookToSave.bookId]);
     } catch (err) {
       console.error(err);
     }
@@ -129,10 +126,10 @@ const SearchBooks = () => {
                   <Card.Text>{book.description}</Card.Text>
                   {Auth.loggedIn() && (
                     <Button
-                      disabled={savedBookIds.has(book.bookId)}
+                      disabled={savedBookIds.includes(book.bookId)}
                       className="btn-block btn-info"
                       onClick={() => handleSaveBook(book.bookId)}>
-                      {savedBookIds.has(book.bookId) ? 'Already Saved' : 'Save This Book'}
+                      {savedBookIds.includes(book.bookId) ? 'Already Saved' : 'Save This Book'}
                     </Button>
                   )}
                 </Card.Body>

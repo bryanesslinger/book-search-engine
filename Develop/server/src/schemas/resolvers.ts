@@ -1,6 +1,5 @@
 import User from '../models/User.js';
 import { UserDocument } from '../models/User.js'; 
-import { signToken, AuthenticationError } from '../services/auth.js';
 
 interface UserArgs {
   userId: string;
@@ -30,7 +29,9 @@ interface RemoveBookArgs {
 }
 
 interface Context {
-  user?: UserDocument; 
+  user?: {
+    _id: string;
+  };
 }
 
 const resolvers = {
@@ -43,67 +44,62 @@ const resolvers = {
       return await User.findOne({ _id: userId });
     },
 
-    me: async (_parent: unknown, _args: unknown, context: Context): Promise<UserDocument | null> => {
-      if (context.user) {
-        return await User.findOne({ _id: context.user._id });
-      }
-      throw new AuthenticationError('Not Authenticated');
+    me: async (): Promise<UserDocument | null> => {
+      // Since we're not using authentication, return the first user
+      return await User.findOne();
     },
   },
 
   Mutation: {
-    createUser: async (_parent: unknown, { input }: CreateUserArgs): Promise<{ token: string; user: UserDocument }> => {
+    createUser: async (_parent: unknown, { input }: CreateUserArgs): Promise<{ user: UserDocument }> => {
       const user = await User.create(input);
-      const token = signToken(user.username, user.email, user.id);
-      return { token, user };
+      return { user };
     },
 
-    login: async (_parent: unknown, { username, password }: { username: string; password: string }): Promise<{ token: string; user: UserDocument }> => {
+    login: async (_parent: unknown, { username, password }: { username: string; password: string }): Promise<{ user: UserDocument }> => {
       const user = await User.findOne({ username });
       if (!user) {
-        throw new AuthenticationError('Could not find user');
+        throw new Error('Could not find user');
       }
       const correctPw = await user.isCorrectPassword(password);
       if (!correctPw) {
-        throw new AuthenticationError('Not Authenticated');
+        throw new Error('Incorrect password');
       }
-      const token = signToken(user.username, user.email, user.id);
-      return { token, user };
+      return { user };
     },
 
-    updateUser: async (_parent: unknown, { userId, input }: { userId: string; input: Partial<UserDocument> }, context: Context): Promise<UserDocument | null> => {
-      if (context.user && context.user._id === userId) {
-        return await User.findOneAndUpdate({ _id: userId }, input, { new: true });
-      }
-      throw new AuthenticationError('You cannot update this user');
+    updateUser: async (_parent: unknown, { userId, input }: { userId: string; input: Partial<UserDocument> }): Promise<UserDocument | null> => {
+      return await User.findOneAndUpdate({ _id: userId }, input, { new: true });
     },
 
-    deleteUser: async (_parent: unknown, { userId }: UserArgs, context: Context): Promise<UserDocument | null> => {
-      if (context.user && context.user._id === userId) {
-        return await User.findOneAndDelete({ _id: userId });
-      }
-      throw new AuthenticationError('You cannot delete this user');
+    deleteUser: async (_parent: unknown, { userId }: UserArgs): Promise<UserDocument | null> => {
+      return await User.findOneAndDelete({ _id: userId });
     },
 
-    saveBook: async (_parent: unknown, { input }: SaveBookArgs, context: Context): Promise<UserDocument | null> => {
-      if (!context.user) {
-        throw new AuthenticationError('Not Authenticated');
+    saveBook: async (_parent: unknown, { input }: SaveBookArgs): Promise<UserDocument | null> => {
+      // Since we're not using authentication, we'll save the book to the first user we find
+      // In a real application, you would use the authenticated user's ID
+      const user = await User.findOne();
+      if (!user) {
+        throw new Error('No users found');
       }
 
       return await User.findOneAndUpdate(
-        { _id: context.user._id },
+        { _id: user._id },
         { $addToSet: { savedBooks: input } },
         { new: true, runValidators: true }
       );
     },
 
-    removeBook: async (_parent: unknown, { bookId }: RemoveBookArgs, context: Context): Promise<UserDocument | null> => {
-      if (!context.user) {
-        throw new AuthenticationError('Not Authenticated');
+    removeBook: async (_parent: unknown, { bookId }: RemoveBookArgs): Promise<UserDocument | null> => {
+      // Since we're not using authentication, we'll remove the book from the first user we find
+      const user = await User.findOne();
+      if (!user) {
+        throw new Error('No users found');
       }
 
       return await User.findOneAndUpdate(
-        { _id: context.user._id },
+        { _id: user._id },
         { $pull: { savedBooks: { bookId } } },
         { new: true }
       );

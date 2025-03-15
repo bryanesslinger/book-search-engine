@@ -18,11 +18,6 @@ export const typeDefs = gql`
     link: String
   }
 
-  type Auth {
-    token: String!
-    user: User!
-  }
-
   type Query {
     getUsers: [User!]
     getUser(userId: String!): User
@@ -30,8 +25,8 @@ export const typeDefs = gql`
   }
 
   type Mutation {
-    createUser(input: CreateUserInput!): Auth
-    login(username: String!, password: String!): Auth 
+    createUser(input: CreateUserInput!): User
+    login(username: String!, password: String!): User
     updateUser(userId: String!, input: UpdateUserInput!): User
     deleteUser(userId: String!): User
     saveBook(input: SaveBookInput!): User

@@ -17,7 +17,6 @@ const LoginForm = ({ handleModalClose }: { handleModalClose: () => void }) => {
   const [validated] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
 
-  // Apollo useMutation hook
   const [login, { error }] = useMutation(LOGIN_USER);
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -28,7 +27,6 @@ const LoginForm = ({ handleModalClose }: { handleModalClose: () => void }) => {
   const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    // Check form validity
     const form = event.currentTarget;
     if (form.checkValidity() === false) {
       event.preventDefault();
@@ -36,14 +34,14 @@ const LoginForm = ({ handleModalClose }: { handleModalClose: () => void }) => {
     }
 
     try {
-      const { data } = await login({
+      await login({
         variables: { 
           username: userFormData.username, 
           password: userFormData.password 
         },
       });
 
-      Auth.login(data.login.token);
+      Auth.login();
 
       if (handleModalClose) {
         handleModalClose();

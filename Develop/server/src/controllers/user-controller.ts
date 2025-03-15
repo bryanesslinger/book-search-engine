@@ -1,8 +1,6 @@
 import type { Request, Response } from 'express';
-// import user model
 import User from '../models/User.js';
-// import sign token function from auth
-import { signToken } from '../services/auth.js';
+// import { signToken } from '../services/auth.js'; // removing auth for hw submission
 
 // get a single user by either their id or their username
 export const getSingleUser = async (req: Request, res: Response) => {
@@ -24,8 +22,8 @@ export const createUser = async (req: Request, res: Response) => {
   if (!user) {
     return res.status(400).json({ message: 'Something is wrong!' });
   }
-  const token = signToken(user.username, user.password, user.id.toString());
-  return res.json({ token, user });
+  // const token = signToken(user.username, user.password, user.id.toString()); // commenting out auth for hw submission
+  return res.json({ user });
 };
 
 // login a user, sign a token, and send it back (to client/src/components/LoginForm.js)
@@ -41,8 +39,8 @@ export const login = async (req: Request, res: Response) => {
   if (!correctPw) {
     return res.status(400).json({ message: 'Wrong password!' });
   }
-  const token = signToken(user.username, user.password, user.id.toString());
-  return res.json({ token, user });
+  // const token = signToken(user.username, user.password, user.id.toString()); // commenting out auth for hw submission
+  return res.json({ user });
 };
 
 // save a book to a user's `savedBooks` field by adding it to the set (to prevent duplicates)

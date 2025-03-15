@@ -15,9 +15,7 @@ class AuthService {
 
   // check if user's logged in
   loggedIn() {
-    // Checks if there is a saved token and it's still valid
-    const token = this.getToken();
-    return !!token && !this.isTokenExpired(token); // handwaiving here
+    return true; // Always return logged in since we're removing authentication
   }
 
   // check if token is expired
@@ -39,16 +37,11 @@ class AuthService {
     return localStorage.getItem('id_token');
   }
 
-  login(idToken: string) {
-    // Saves user token to localStorage
-    localStorage.setItem('id_token', idToken);
+  login() {
     window.location.assign('/');
   }
 
   logout() {
-    // Clear user token and profile data from localStorage
-    localStorage.removeItem('id_token');
-    // this will reload the page and reset the state of the application
     window.location.assign('/');
   }
 }

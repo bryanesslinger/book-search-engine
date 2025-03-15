@@ -1,147 +1,69 @@
-// //I reccomend getting rid of the code below but you can comment it out
-// import express from 'express';
-// import path from 'node:path';
-// import db from './config/connection.js';
-// import routes from './routes/index.js';
-
-// const app = express();
-// const PORT = process.env.PORT || 3001;
-
-// app.use(express.urlencoded({ extended: true }));
-// app.use(express.json());
-
-// // if we're in production, serve client/build as static assets
-// if (process.env.NODE_ENV === 'production') {
-//   app.use(express.static(path.join(__dirname, '../client/build')));
-// }
-
-// app.use(routes);
-
-// db.once('open', () => {
-//   app.listen(PORT, () => console.log(`🌍 Now listening on localhost:${PORT}`));
-// });
-
-
-
-// Uncomment this code below
-
-// import express from 'express';
-// import path from 'node:path';
-// import type { Request, Response } from 'express';
-// // Import the ApolloServer class
-// import {
-//   ApolloServer,
-// } from '@apollo/server';
-// import {
-//   expressMiddleware
-// } from '@apollo/server/express4';
-// import { authenticateToken } from './services/auth-service.js';
-// // Import the two parts of a GraphQL schema
-// import { typeDefs, resolvers } from './schemas/index.js';
-// import db from './config/connection.js';
-
-
-// const PORT = process.env.PORT || 3001;
-// const server = new ApolloServer({
-//   typeDefs,
-//   resolvers,
-// });
-
-// const app = express();
-
-// // Create a new instance of an Apollo server with the GraphQL schema
-// const startApolloServer = async () => {
-//   await server.start();
-//   await db;
-
-//   app.use(express.urlencoded({ extended: false }));
-//   app.use(express.json());
-
-//   app.use('/graphql', expressMiddleware(server as any,
-//     {
-//       context: authenticateToken as any
-//     }
-//   ));
-
-//   if (process.env.NODE_ENV === 'production') {
-//     app.use(express.static(path.join(__dirname, '../client/dist')));
-
-//     app.get('*', (_req: Request, res: Response) => {
-//       res.sendFile(path.join(__dirname, '../client/dist/index.html'));
-//     });
-//   }
-
-//   app.listen(PORT, () => {
-//     console.log(`API server running on port ${PORT}!`);
-//     console.log(`Use GraphQL at http://localhost:${PORT}/graphql`);
-//   });
-
-// };
-
-// // Call the async function to start the server
-// startApolloServer();
-
-
 // new
-import cors from 'cors';
-import dotenv from 'dotenv';
-dotenv.config();
 import express from 'express';
-import path from 'node:path';
+import path from 'path';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@apollo/server/express4';
-import { authenticateToken } from './services/auth.js';
+import dotenv from 'dotenv';
+import cors from 'cors';
+
 import { typeDefs, resolvers } from './schemas/index.js';
 import db from './config/connection.js';
+// import { authenticateToken } from './services/auth.js'; // removing auth for hw submission
+
+dotenv.config();
 
 const PORT = process.env.PORT || 3001;
+const app = express();
+
 const server = new ApolloServer({
   typeDefs,
   resolvers,
 });
 
-const app = express();
-
-app.use(
-  cors({
-    origin: '*',
-    credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    methods: ['GET', 'POST', 'OPTIONS'],
-  })
-);
-
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-
-
 const startApolloServer = async () => {
   await server.start();
-  await db;
 
+  app.use(express.urlencoded({ extended: true }));
+  app.use(express.json());
+
+  // Add CORS middleware for development
+  if (process.env.NODE_ENV !== 'production') {
+    app.use(cors({
+      origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+      credentials: true
+    }));
+  }
+
+  // GraphQL endpoint
   app.use(
     '/graphql',
-    expressMiddleware(server, {
-      context: async ({ req }) => {
-        const authContext = authenticateToken({ req });
-        console.log("🛠️ GraphQL Context:", authContext);
-        return authContext;
-      },
-    })
+    process.env.NODE_ENV !== 'production' 
+      ? cors({
+          origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+          credentials: true
+        })
+      : (_req, _res, next) => next(),
+    expressMiddleware(server)
   );
 
+  // Serve static assets in production
   if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, '../client/dist')));
+    // Set static folder
+    app.use(express.static(path.join(__dirname, '../../client/dist')));
+
     app.get('*', (_req, res) => {
-      res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+      res.sendFile(path.join(__dirname, '../../client/dist/index.html'));
     });
   }
 
+  db.on('error', console.error.bind(console, 'MongoDB connection error:'));
+  await db.once('open', () => {
+    console.log('MongoDB connection established successfully');
+  });
 
   app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`🔗 GraphQL Playground: http://localhost:${PORT}/graphql`);
+    console.log(`🚀 API server running on port ${PORT}!`);
+    console.log(`🔗 GraphQL available at http://localhost:${PORT}/graphql`);
   });
 };
 
