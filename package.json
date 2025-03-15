@@ -6,7 +6,7 @@
   "scripts": {
     "start": "cd Develop/server && npm start",
     "develop": "concurrently \"cd Develop/server && npm run watch\" \"cd Develop/client && npm start\"",
-    "install": "cd Develop/server && npm i && cd ../client && npm i",
+    "install": "cd Develop/server && npm i --production=false && cd ../client && npm i --production=false",
     "build": "cd Develop/client && npm run build && cd ../server && npm run build",
     "render-build": "npm install && npm run build"
   },
