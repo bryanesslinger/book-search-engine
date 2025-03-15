@@ -1,0 +1,22 @@
+{
+  "name": "book-search-engine",
+  "version": "1.0.0",
+  "description": "MERN stack book search engine",
+  "main": "server/dist/server.js",
+  "scripts": {
+    "start": "cd Develop/server && npm start",
+    "develop": "concurrently \"cd Develop/server && npm run watch\" \"cd Develop/client && npm start\"",
+    "install": "cd Develop/server && npm i && cd ../client && npm i",
+    "build": "cd Develop/client && npm run build && cd ../server && npm run build",
+    "render-build": "npm install && npm run build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+} 
