@@ -28,12 +28,6 @@ interface RemoveBookArgs {
   bookId: string;
 }
 
-interface Context {
-  user?: {
-    _id: string;
-  };
-}
-
 const resolvers = {
   Query: {
     getUsers: async (): Promise<UserDocument[]> => {
@@ -51,12 +45,11 @@ const resolvers = {
   },
 
   Mutation: {
-    createUser: async (_parent: unknown, { input }: CreateUserArgs): Promise<{ user: UserDocument }> => {
-      const user = await User.create(input);
-      return { user };
+    createUser: async (_parent: unknown, { input }: CreateUserArgs): Promise<UserDocument> => {
+      return await User.create(input);
     },
 
-    login: async (_parent: unknown, { username, password }: { username: string; password: string }): Promise<{ user: UserDocument }> => {
+    login: async (_parent: unknown, { username, password }: { username: string; password: string }): Promise<UserDocument> => {
       const user = await User.findOne({ username });
       if (!user) {
         throw new Error('Could not find user');
@@ -65,7 +58,7 @@ const resolvers = {
       if (!correctPw) {
         throw new Error('Incorrect password');
       }
-      return { user };
+      return user;
     },
 
     updateUser: async (_parent: unknown, { userId, input }: { userId: string; input: Partial<UserDocument> }): Promise<UserDocument | null> => {
