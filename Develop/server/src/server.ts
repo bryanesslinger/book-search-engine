@@ -22,6 +22,7 @@ const app = express();
 const server = new ApolloServer({
   typeDefs,
   resolvers,
+  introspection: true,
 });
 
 const startApolloServer = async () => {
@@ -41,13 +42,10 @@ const startApolloServer = async () => {
   // GraphQL endpoint
   app.use(
     '/graphql',
-    process.env.NODE_ENV !== 'production' 
-      ? cors({
-          origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
-          credentials: true
-        })
-      : (_req, _res, next) => next(),
-    expressMiddleware(server)
+    cors(), // Enable CORS for all origins in production for GraphQL
+    expressMiddleware(server, {
+      context: async () => ({})
+    })
   );
 
   // Serve static assets in production
